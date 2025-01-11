@@ -1,13 +1,29 @@
-
-const express = require('express')
+require('dotenv').config();
+const express = require('express');
 const app = express();
+const pool = require('./db');
+const customerRoutes = require('./routes/customers');
 
 const PORT = 3000;
+
+//middleware
+app.use(express.json());
 
 app.get('/', (req, res) => {
     res.send('Welcome to the e-commerce app!');
 });
 
-app.listen(PORT, () => {
-    console.log('Server listening to port ' + PORT);
+app.use('/customers', customerRoutes);
+
+pool.query('SELECT NOW()', (err, res) => {
+    if(err){
+        console.error('Error connecting to the db', err.stack);
+    } else {
+        console.log('Connected to the db successfully!');
+    };
 });
+
+app.listen(PORT, () => {
+    console.log('Server listening on port ' + PORT);
+});
+
