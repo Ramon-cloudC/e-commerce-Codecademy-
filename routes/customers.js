@@ -14,11 +14,11 @@ router.get('/', async (req, res) => {
         console.log(result.rows);
         
     } catch (err){
+        console.error('Error getting customers:', err);
         res.status(500).send({
             message: 'Internal server error',
             status: 'Failed',
         });
-        console.error(err);
     };
     
 });
