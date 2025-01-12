@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const pool = require('./db');
 const customerRoutes = require('./routes/customers');
+const productRoutes = require('./routes/products');
 
 const PORT = 3000;
 
@@ -14,6 +15,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/customers', customerRoutes);
+app.use('/products', productRoutes);
 
 pool.query('SELECT NOW()', (err, res) => {
     if(err){
