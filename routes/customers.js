@@ -53,7 +53,7 @@ router.get('/:id', async (req, res) => {
 });
 
 //create customer
-router.post('/:id', async (req, res) => {
+router.post('/', async (req, res) => {
 
     const {first_name, last_name, email, address, phone_number} = req.body;
     
@@ -67,7 +67,8 @@ router.post('/:id', async (req, res) => {
    
     try {
         const customer = await pool.query('INSERT INTO customers (first_name, last_name, email, address, phone_number) VALUES ($1, $2, $3,$4, $5) RETURNING *', 
-            [first_name, last_name, email, address, phone_number]);
+            [first_name, last_name, email, address, phone_number]
+        );
         res.status(201).json({
             status: 'Successfully added customers',
             data: customer.rows,
@@ -78,7 +79,7 @@ router.post('/:id', async (req, res) => {
             status: 'Not successful',
             message: 'Couldn\'t add cutomer, try again.',
         });
-        console.error('Error whilst creating customer:', err)
+    
     };
 });
 
@@ -101,12 +102,10 @@ router.put('/:id', async (req, res) => {
             data: result.rows,
         });
     } catch (err){
+
         res.status(500).json({
             message: 'Couldn\'t update the table',
             status: 'Error',
-        });
-        console.error({
-            message: 'Error updating customer:', err
         });
     }
 });
@@ -133,7 +132,7 @@ router.delete('/:id', async (req, res) => {
         });
 
     } catch(err){
-        console.error('Error deleting customer:', err);
+
         res.status(500).json({
             message:'Error deleting customer',
             status: 'Failed',
