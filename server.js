@@ -6,6 +6,9 @@ const customerRoutes = require('./routes/customers');
 const productRoutes = require('./routes/products');
 const categoryRoutes = require('./routes/categories');
 const orderRoutes = require('./routes/orders');
+const paymentRoutes = require('./routes/payments');
+const shoppingCartRoutes = require('./routes/shoppingCart');
+const orderProductsRoutes = require('./routes/ordersProducts');
 
 const PORT = 3000;
 
@@ -20,6 +23,11 @@ app.use('/customers', customerRoutes);
 app.use('/products', productRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/orders', orderRoutes);
+app.use('/payments', paymentRoutes);
+app.use('/shoppingCart', shoppingCartRoutes);
+app.use('/ordersProducts', orderProductsRoutes);
+
+
 
 pool.query('SELECT NOW()', (err, res) => {
     if(err){
