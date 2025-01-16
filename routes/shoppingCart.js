@@ -79,6 +79,121 @@ router.post('/', async(req, res) => {
     }
 });
 
+// checkout route from cart 
+
+router.post('/:id/checkout', async(req, res) => {
+    const { id } = req.params;
+    const { payment_method, shipping_address } = req.body; //in this case the req.body will be given by the form, with the user input during the checkout process 
+
+    if(!payment_method || !shipping_address){
+        return res.status(400).json({
+            messgae: 'All fields are required',
+            status: 'Failed',
+        })
+    }
+    try{
+
+        //validate cart 
+
+        const cartResult = await pool.query('SELECT * FROM shopping_cart WHERE customer_id = $1', [id]);
+
+        if(cartResult.rowCount === 0){
+            return res.status(404).json({
+                message: 'Cart not found',
+                status: 'Failed',
+            })
+        }
+
+        //validate items cart 
+        
+        const cartItemsResult = await pool.query('SELECT * FROM order_products WHERE customer_id = $1', [id]);
+
+        if(!cartItemsResult){
+            return res.status(404).json({
+                message: 'Cart is empty',
+                status: 'Failed'
+            });
+        }
+
+        //save the result of order products
+        const cartItems = cartItemsResult.rows;
+
+        //Calculate total amount by fetching prices for each product
+
+        let totalAmount = 0;
+
+        for (const item of cartItems) {
+            const productResult = await pool.query(
+                'SELECT price FROM products WHERE product_id = $1',
+                [item.product_id]
+            );
+
+            if (productResult.rowCount === 0) {
+                return res.status(404).json({
+                    message: `Product with ID ${item.product_id} not found.`,
+                    status: 'Failed',
+                });
+            }
+
+            const productPrice = productResult.rows[0].price;
+            totalAmount += productPrice * item.quantity;
+        }
+        
+        //validate payment
+
+        const paymentStatus = 'Success'; //in this project we assume that the payment is always set to 'Success' 
+
+        if(paymentStatus !== 'Success'){
+            return res.status(500).json({
+                message: 'Payment failed',
+                status: 'Failed',
+            });
+        }
+        //Create the order
+        const orderResult = await pool.query(
+            `INSERT INTO orders (customer_id, order_date, status, total_amount, shipping_address, payment_status)
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+            [
+                id,
+                new Date(),
+                'Processing',
+                totalAmount,
+                shipping_address,
+                'Paid',
+            ]
+        );
+
+        const order = orderResult.rows[0];
+
+        // 5. Link cart items to the order
+        for (const item of cartItems) {
+            await pool.query(
+                `INSERT INTO order_products (order_id, product_id, quantity)
+                 VALUES ($1, $2, $3)`,
+                [order.order_id, item.product_id, item.quantity]
+            );
+        }
+
+        // 6. Clear the cart
+        await pool.query('DELETE FROM order_products WHERE customer_id = $1', [id]);
+        await pool.query('DELETE FROM shopping_cart WHERE customer_id = $1', [id]);
+
+        // Respond with the created order
+        res.status(200).json({
+            message: 'Checkout successful.',
+            data: {
+                order,
+                cartItems,
+            },
+        });
+
+    } catch(err){
+        res.status(400).json({
+            message: 'Cart not found', 
+            status: err,
+        });
+    }
+})
 // update cart 
 
 router.put('/:id', async(req, res) => {
@@ -112,8 +227,11 @@ router.put('/:id', async(req, res) => {
 router.delete('/:id', async (req, res) => {
 
     const { id } = req.params;
+
     try {
+        
         const result = await pool.query('DELETE FROM shopping_cart WHERE cart_id = $1 RETURNING *', [id]);
+        
         if (result.rows.length === 0) {
             return res.status(404).json({ 
                 error: 'Cart not found' 
