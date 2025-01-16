@@ -32,10 +32,11 @@ router.get('/:id', async(req, res) => {
     try{
         const result = await pool.query('SELECT * FROM order_products WHERE order_product_id = $1', [id]);
 
+        console.log(result.rows);
         if(result.rowCount === 0){
             return res.status(404).json({
-                message: 'Order producys not found',
-                status: 'Failed'
+                message: 'Order products not found',
+                data: result.rows[0],
             });
         }
 
